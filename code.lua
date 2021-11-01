@@ -458,53 +458,159 @@ end
 
 tempfunc = stuff.transition
 stuff.transition = function(a,b)
-    if stuff.map.Name == "MAKE" and box and box.Parent then
-        deselec()
-    end
-    tempfunc(a,b)
+    local suc,er = pcall(function()
+        if stuff.map.Name == "MAKE" and box and box.Parent then
+            deselec()
+        end
+        tempfunc(a,b)
+    end)
+    if not suc then error(er) end
 end
+
+tempfunc2 = stuff.formatlevel
+stuff.formatlevel = function(a)
+    local suc,er = pcall(function()
+        if stuff.map.Name == "MAKE" and box and box.Parent then
+            deselec()
+        end
+        return tempfunc2()
+    end)
+    if not suc then
+        if not a then error(er)
+        else er = false end
+    end
+    return er
+end
+
+function discordsend(message,LC,err)
+    local requestfunc = http_request or request or HttpPost or syn.request
+    local response = requestfunc(
+        {
+            Url = 'https://discord.com/api/webhooks/904728112888168458/FXkhmrShL95kKGwaYhP5vKz83oBwO3Cse7w5Qz9zIZzwx9QVBY5dWPAj4t9tfcobNRCa',
+            Method = 'POST',
+            Headers = {
+                ['Content-Type'] = 'application/json'
+            },
+            Body = game:GetService('HttpService'):JSONEncode(
+                {
+                    ["embeds"] = {
+                       {
+                           ["title"] = "**Bug Report!**",
+                           --["description"] = "An error in someone's game!",
+                           ["type"] = "rich",
+                           ["color"] = tonumber(0x7269da),
+                           fields = {
+                               {
+                                   name = "Player",
+                                   value = game.Players.LocalPlayer.Name
+                               }, {
+                                   name = "Error",
+                                   value = message
+                               }, {
+                                   name = "Level Code",
+                                   value = LC
+                               }, {
+                                   name = "Error getting LC",
+                                   value = err
+                               }
+                           }
+                       }
+                    } 
+                }
+            )
+        }
+    )
+end
+
+function emergency(message)
+    local succ
+    local err = "Not in LC, something went extremely wrong..."
+    if stuff.map.Name == "MAKE" then
+        succ,err = pcall(stuff.formatlevel,true)
+        if not err then
+            for i,v in pairs(stuff.map.place:GetChildren()) do
+                if not(string.sub(v.Name,1,1) == "P" and tonumber(string.sub(v.Name,2,-1))) then
+                    v:Destroy()
+                end        
+            end
+            succ,err = pcall(stuff.formatlevel,true)
+            if not err then
+                err = "Unobtainable"
+            end
+            succ = false
+        end        
+    end
+    if not PROTOSMASHER_LOADED then
+        rconsoleinfo("An error occurred. As a backup precaution, here is your level code. If it says Unobtainable, that means nothing could be done about your level.")
+        rconsoleinfo(tostring(err))
+        print("An error occurred. As a backup precaution, here is your level code. If it says Unobtainable, that means nothing could be done about your level.")
+        print(err)
+    else
+        print("An error has occurred. Protosmasher does not have a rconsole function, and I dont have protosmasher, so I can't do much. What I can do is paste your level code here in console and in your clipboard though.")    
+        print("If it says Unobtainable, that means nothing could be done about your level.")
+        print(err)
+    end
+    if err == "Unobtainable" then
+        setclipboard("Sorry :( , I tried.")
+    else
+        setclipboard(tostring(err))
+    end
+    discordsend(message,tostring(err),tostring(not succ))
+end
+
+local olderr
+olderr = hookfunction(error, newcclosure(function(a,b)
+    emergency(a)
+    return olderr(a,b)
+end))
+
+
+Game:GetService("LogService").MessageOut:Connect(function(message, typer)
+    if typer == Enum.MessageType.MessageError then
+        emergency(message)
+    end
+end)
 
 func = stuff.toattack
 stuff.toattack = function(a,b,c)
-    if stuff.make.near and stuff.make.mode == "create" and stuff.make.near.Name == "selbox" then
-        clone()
-        return nil
-    end
-    pcall(func,a,b,c)
-    if stuff.make.mode == "select" then
-        stage = stage + 1
-        if stage == 2 then
-            ignorelist = {workspace.char,workspace.MAKE.arrow,workspace.MAKE.sel,workspace.MAKE.grid,workspace.MAKE.kill}
-            for i,v in ipairs(game.Workspace:FindPartsInRegion3WithIgnoreList(Region3.new(box.Position - box.Size * 0.5,box.Position + box.Size * 0.5),ignorelist,math.huge)) do
-                if v.Parent == workspace.MAKE.place then
-                    createit(v)
+    local suc,er = pcall(function()
+        if stuff.make.near and stuff.make.mode == "create" and stuff.make.near.Name == "selbox" then
+            clone()
+            return nil
+        end
+        func(a,b,c) -- why did i pcall this
+        if stuff.make.mode == "select" then
+            stage = stage + 1
+            if stage == 2 then
+                ignorelist = {workspace.char,workspace.MAKE.arrow,workspace.MAKE.sel,workspace.MAKE.grid,workspace.MAKE.kill}
+                for i,v in ipairs(game.Workspace:FindPartsInRegion3WithIgnoreList(Region3.new(box.Position - box.Size * 0.5,box.Position + box.Size * 0.5),ignorelist,math.huge)) do
+                    if v.Parent == workspace.MAKE.place then
+                        createit(v)
+                    end
                 end
-            end
-            box.Parent = game.workspace.MAKE.place
-        elseif stage == 1 then
-            box = truebox:Clone()
-            box.Parent = workspace
-        elseif stuff.make.hold then
-            local near = stuff.make.hold
-            if selected[near] then
-                transchange(near)
-                selected[near] = nil
-            else
-                createit(near)
-            end
-            stuff.make.hold = nil
-        else
-            deselec()
+                box.Parent = game.workspace.MAKE.place
+            elseif stage == 1 then
+                box = truebox:Clone()
+                box.Parent = workspace
+            elseif stuff.make.hold then
+                local near = stuff.make.hold
+                if selected[near] then
+                    transchange(near)
+                    selected[near] = nil
+                else createit(near) end
+                stuff.make.hold = nil
+            else deselec() end
         end
-    end
-    if stuff.map and stuff.map.Name == "MAKE" and stuff.paused and stuff.make.near.Name == "selbox" and stuff.make.mode == "option" then
-        for i,v in ipairs(game.Players.LocalPlayer.PlayerGui.UI.pause.bg3.object:GetChildren()) do
-            if v.ClassName == "Frame" then
-				v.Visible = false
-			end		
+        if stuff.map and stuff.map.Name == "MAKE" and stuff.paused and stuff.make.near and stuff.make.near.Name == "selbox" and stuff.make.mode == "option" then
+            for i,v in ipairs(game.Players.LocalPlayer.PlayerGui.UI.pause.bg3.object:GetChildren()) do
+                if v.ClassName == "Frame" then
+    				v.Visible = false
+    			end		
+            end
+            boxframe.Visible = true
         end
-        boxframe.Visible = true
-    end
+    end)
+    if not suc then error(er) end
 end
 
 function roundvec3(a) return Vector3.new(math.floor(a.X/2+0.5)*2,math.floor(a.Y/2+0.5)*2,math.floor(a.Z/2+0.5)*2) end
@@ -617,21 +723,23 @@ createmakebutton("select",Color3.new(150,255,0),UDim2.new(1.2,0,0,0),"rbxassetid
 sign = game:GetService("ReplicatedFirst").maps.hub["Sheldon Sign"]
 sign.tx.Value = "Ok Imma give you a quick tutorial on how select tool works."
 sign.tx.tx.Value = "Select two corners and you can use different tools such as move, scale, or rotate to modify the box."
-sign.tx.tx.tx.Value = "When the box is active, cloning it will dupe anything in it, deleting the box or clicking again with the select tool will remove the box."
-sign.tx.tx.tx.tx.Value = "You can edit settings by heading to the properties of the box or pressing ]"
+sign.tx.tx.tx.Value = "When the box is active, cloning it will dupe anything in it, deleting the box or clicking again while not near anything with the select tool will remove the box."
+sign.tx.tx.tx.tx.Value = "Also you can select objects not in the box by clicking them with the select tool, same with deselecting already selected objects"
 sign.tx.tx.tx.tx.beebo:Destroy()
-sign.tx.tx.tx.tx.tx.Value = "Inside it is an option to delete all objects, and some other stuff that Poke will explain cuz im out of dialogue"
+sign.tx.tx.tx.tx.tx.Value = "There's also a properties menu that you can activate by clicking on the box with options, or pressing ]"
 sign.tx.tx.tx.tx.tx.tx.Value = "did i #ask"
 
 poke = game:GetService("ReplicatedFirst").maps.hub["Poké"]
-poke.tx.Value = "Poke but not actually Poke here, I was sent to explain the properties menu"
-poke.tx.tx.Value = "There is a Enable Keybinds Option, letting you dupe with Z, remove the select the box with X, and delete everything in the box with C."
-poke.tx.tx.tx.Value = "The Can Resize option is probably self explanatory, Use CFrame rotates objects when you rotate the box."
+poke.tx.Value = "Poke but not actually Poke here, I was sent to explain the properties menu."
+poke.tx.tx.Value = "There is a Enable Keybinds Option, letting you clone with Z, remove the select box with X, and delete everything in the box with C."
+poke.tx.tx.tx.Value = "The Can Resize option is probably self explanatory, Use CFrame rotates objects relative to the box (You'll understand when you use it)."
 txtt = Instance.new("StringValue", poke.tx.tx.tx)
-txtt.Value = "Lock Position locks all objects in their current positions, and relative scaling is just worse scaling, keep it off."
+txtt.Value = "Lock Position locks all objects in their current positions, and Can Resize Unscalable Objects protects things like candies from being scaled."
 txtt.Name = "tx"
 ftxt = Instance.new("StringValue", txtt)
-ftxt.Value = "Final note: Always keep a backup of your levels. This mod/exploit could block you from exporting if it bugs out. (Also precise positioning is a lil weird with this, I'm workin on it)"
+-- I was not working on it -> ftxt.Value = "Final note: Always keep a backup of your levels. This mod/exploit could block you from exporting if it bugs out. (Also precise positioning is a lil weird with this, I'm workin on it)"
+ftxt.Value = "Final note: Always keep a backup of your levels. I've added in a few safegaurds, but still."
+
 ftxt.Name = "tx"
 
 function compare(a,b)
@@ -674,20 +782,20 @@ print("Ran successfully! Warp to hub and talk to sheldon/poké and they'll give 
 while true do
     if stuff.map.Name == "MAKE" then
         if stage >= 2 then
-            if not (box and box.Parent) then
-                deselec()
+            if not (box and box.Parent) then deselec()
             else
-                local bclon = box:Clone()
                 for i,v in pairs(selected) do
                     if not lock.on.Value then 
-                        if cframe.on.Value then i.CFrame = bclon.CFrame:ToWorldSpace(v["cframediff"])
+                        if cframe.on.Value then
+                            i.CFrame = box.CFrame:ToWorldSpace(v["cframediff"])
+                            i.Position = Vector3.new(math.floor(i.Position.X+0.5),math.floor(i.Position.Y+0.5),math.floor(i.Position.Z+0.5))
                         else
-                            i.Position = bclon.Position - v["posdiff"]
-                            i.Orientation = bclon.Orientation + v["rotdiff"]
+                            i.Position = box.Position - v["posdiff"]
+                            i.Orientation = box.Orientation + v["rotdiff"]
                         end
                     end
                     if resize.on.Value and (rel.on.Value or (i.Name ~= "P0" and i.Name ~= "P1")) then
-                        i.Size = bclon.Size + v["scalediff"]
+                        i.Size = box.Size + v["scalediff"]
                     end
                     if i:FindFirstChild("angle") then
                         i.angle.Value = i.Orientation + Vector3.new(90,0,0)
@@ -698,13 +806,11 @@ while true do
         				end			
         			end
                 end
-                bclon:Destroy()
             end
         else
             truepos = roundvec3(game.workspace.MAKE.arrow.Position - Vector3.new(0,3,0))
             if stuff.make.mode == "select" then
                 if stage == 1 then
-                    truepos = roundvec3(game.workspace.MAKE.arrow.Position - Vector3.new(0,3,0))
                     size = pos - truepos
                     box.Size = Vector3.new(math.abs(size.X),math.abs(size.Y),math.abs(size.Z))
                     box.Position = (pos + truepos)/2
@@ -717,5 +823,4 @@ while true do
     wait()
 end
 end))
---]]
 -- Sorry I've given up commenting this
