@@ -1,4 +1,6 @@
-print(pcall(function()
+if not getgenv().seltool then
+    getgenv().seltool = true
+    print(pcall(function()
 stuff = getsenv(game.Players.LocalPlayer.PlayerScripts.CharacterScript)
 selected = {}
 stage = 0
@@ -778,8 +780,10 @@ oldpair = hookfunction(pairs, newcclosure(function(a,b)
     end
     return oldpair(a)
 end))
+stuff.pause(true)
+stuff.textbuttons["hub2"]()
 print("Ran successfully! Warp to hub and talk to sheldon/poké and they'll give advice about this mod/exploit")
-while true do
+while wait() do
     if stuff.map.Name == "MAKE" then
         if stage >= 2 then
             if not (box and box.Parent) then deselec()
@@ -820,7 +824,9 @@ while true do
             end
         end
     end
-    wait()
 end
 end))
+else
+    print("Select Tool has already been executed!")
+end
 -- Sorry I've given up commenting this
