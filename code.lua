@@ -580,7 +580,7 @@ stuff.toattack = function(a,b,c)
             clone()
             return nil
         end
-        func(a,b,c) -- why did i pcall this
+        pcall(func,a,b,c) -- pcalled because it will fail when finding options for box
         if stuff.make.mode == "select" then
             stage = stage + 1
             if stage == 2 then
