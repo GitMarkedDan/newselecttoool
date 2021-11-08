@@ -419,7 +419,7 @@ if not getgenv().seltool then
                 transchange(i)
                 local cloneder = i:Clone()
                 cloneder.Position = Vector3.new(math.floor(cloneder.Position.X + 0.5),math.floor(cloneder.Position.Y + 0.5),math.floor(cloneder.Position.Z + 0.5))
-                cloneder.Size = roundvec3(i)
+                cloneder.Size = roundvec3(i.Position)
                 cloneder.Parent = game.workspace.MAKE.place
                 i.Transparency = (1 + i.Transparency) / 2
                 for i2,v2 in ipairs(i:GetChildren()) do
