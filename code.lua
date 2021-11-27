@@ -760,3 +760,4 @@ print(pcall(function()
     end
 end))
 -- I swear I make myself go more insane for every "final patch" I do
+-- also some vars are left global cuz maybe somone wants to getsenv it idk
